@@ -28,6 +28,11 @@
 
   "redirects": [
     {
+      "source": "https://www.deelink.cc/:path*",
+      "destination": "https://deelink.cc/:path*",
+      "permanent": true
+    },
+    {
       "source": "/home",
       "destination": "/",
       "permanent": true
