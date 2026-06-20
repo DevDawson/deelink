@@ -1,5 +1,4 @@
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Script from 'next/script'
 import { hasBadge } from '@/lib/plans'
@@ -7,6 +6,7 @@ import PlayerCard from '@/components/PlayerCard'
 import ViewLogger from '@/components/ViewLogger'
 import ShareButton from '@/components/ShareButton'
 import { PublicProfile } from '@/lib/types'
+import ProfileClientFallback from './ProfileClientFallback'
 
 interface Props {
   params: { username: string }
@@ -18,14 +18,25 @@ const API_URL  = process.env.NEXT_PUBLIC_API_URL  || 'https://api.deelink.cc'
 // Use native fetch (not axios) for Server Components — integrates with Next.js
 // ISR cache and is reliable in Vercel's Node.js runtime.
 async function fetchProfile(username: string): Promise<PublicProfile | null> {
+  const url = `${API_URL}/api/public/${username}`
   try {
-    const res = await fetch(`${API_URL}/api/public/${username}`, {
+    const res = await fetch(url, {
       next: { revalidate: 60 },
+      headers: { Accept: 'application/json' },
     })
-    if (!res.ok) return null
+    if (!res.ok) {
+      console.error(`[deeLink] fetchProfile ${url} → HTTP ${res.status}`)
+      return null
+    }
     const json = await res.json()
+    // API returns { data: { artist, links } }
+    if (!json?.data?.artist) {
+      console.error(`[deeLink] fetchProfile ${url} → unexpected shape:`, JSON.stringify(json).slice(0, 200))
+      return null
+    }
     return json.data as PublicProfile
-  } catch {
+  } catch (err) {
+    console.error(`[deeLink] fetchProfile ${url} → fetch threw:`, err)
     return null
   }
 }
@@ -69,9 +80,14 @@ export const revalidate = 60
 
 export default async function PublicProfilePage({ params }: Props) {
   const profile = await fetchProfile(params.username)
-  if (!profile) notFound()
 
-  const { artist, links } = profile!
+  // Server-side fetch failed (API unreachable from Vercel) — fall back to
+  // client-side fetch so the browser can load the profile directly via CORS.
+  if (!profile) {
+    return <ProfileClientFallback username={params.username} />
+  }
+
+  const { artist, links } = profile
   const activeLinks  = links.filter((l: { is_active: boolean }) => l.is_active)
   const showBadge    = hasBadge(artist.plan)
   const theme        = artist.theme
