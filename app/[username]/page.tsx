@@ -2,11 +2,11 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Script from 'next/script'
-import { publicApi } from '@/lib/api'
 import { hasBadge } from '@/lib/plans'
 import PlayerCard from '@/components/PlayerCard'
 import ViewLogger from '@/components/ViewLogger'
 import ShareButton from '@/components/ShareButton'
+import { PublicProfile } from '@/lib/types'
 
 interface Props {
   params: { username: string }
@@ -15,40 +15,52 @@ interface Props {
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://deelink.cc'
 const API_URL  = process.env.NEXT_PUBLIC_API_URL  || 'https://api.deelink.cc'
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+// Use native fetch (not axios) for Server Components — integrates with Next.js
+// ISR cache and is reliable in Vercel's Node.js runtime.
+async function fetchProfile(username: string): Promise<PublicProfile | null> {
   try {
-    const res    = await publicApi.getProfile(params.username)
-    const { artist } = res.data.data
-
-    const name       = artist.display_name || artist.username
-    const bio        = artist.bio || `${name}'s music, videos & socials — all in one place.`
-    const avatarUrl  = artist.avatar_path ? `${API_URL}/storage/${artist.avatar_path}` : null
-    const profileUrl = `${SITE_URL}/${artist.username}`
-
-    return {
-      title:       name,
-      description: bio,
-      alternates:  { canonical: profileUrl },
-
-      openGraph: {
-        type:        'profile',
-        url:         profileUrl,
-        title:       `${name} | deeLink`,
-        description: bio,
-        images: avatarUrl
-          ? [{ url: avatarUrl, width: 400, height: 400, alt: name }]
-          : [{ url: `${SITE_URL}/og.png`, width: 1200, height: 630, alt: 'deeLink' }],
-      },
-
-      twitter: {
-        card:        'summary_large_image',
-        title:       `${name} | deeLink`,
-        description: bio,
-        images:      avatarUrl ? [avatarUrl] : [`${SITE_URL}/og.png`],
-      },
-    }
+    const res = await fetch(`${API_URL}/api/public/${username}`, {
+      next: { revalidate: 60 },
+    })
+    if (!res.ok) return null
+    const json = await res.json()
+    return json.data as PublicProfile
   } catch {
-    return { title: 'Profile not found' }
+    return null
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const profile = await fetchProfile(params.username)
+  if (!profile) return { title: 'Profile not found' }
+
+  const { artist } = profile
+  const name       = artist.display_name || artist.username
+  const bio        = artist.bio || `${name}'s music, videos & socials — all in one place.`
+  const avatarUrl  = artist.avatar_path ? `${API_URL}/storage/${artist.avatar_path}` : null
+  const profileUrl = `${SITE_URL}/${artist.username}`
+
+  return {
+    title:       name,
+    description: bio,
+    alternates:  { canonical: profileUrl },
+
+    openGraph: {
+      type:        'profile',
+      url:         profileUrl,
+      title:       `${name} | deeLink`,
+      description: bio,
+      images: avatarUrl
+        ? [{ url: avatarUrl, width: 400, height: 400, alt: name }]
+        : [{ url: `${SITE_URL}/og.png`, width: 1200, height: 630, alt: 'deeLink' }],
+    },
+
+    twitter: {
+      card:        'summary_large_image',
+      title:       `${name} | deeLink`,
+      description: bio,
+      images:      avatarUrl ? [avatarUrl] : [`${SITE_URL}/og.png`],
+    },
   }
 }
 
@@ -56,15 +68,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export const revalidate = 60
 
 export default async function PublicProfilePage({ params }: Props) {
-  let profile
-  try {
-    const res = await publicApi.getProfile(params.username)
-    profile = res.data.data
-  } catch {
-    notFound()
-  }
+  const profile = await fetchProfile(params.username)
+  if (!profile) notFound()
 
-  const { artist, links } = profile
+  const { artist, links } = profile!
   const activeLinks  = links.filter((l: { is_active: boolean }) => l.is_active)
   const showBadge    = hasBadge(artist.plan)
   const theme        = artist.theme
