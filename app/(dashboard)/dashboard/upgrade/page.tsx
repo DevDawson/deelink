@@ -9,10 +9,8 @@ import toast from 'react-hot-toast'
 import { Check, Loader, Zap, Crown } from 'lucide-react'
 import clsx from 'clsx'
 
-// Only display plans in PLAN_ORDER (free/starter/pro/silver); 'premium' is a backend status, not a display tier.
 type DisplayPlan = Exclude<Plan, 'premium'>
 
-// Maps each display plan to the backend product identifier expected by POST /api/subscribe
 const PLAN_PRODUCT: Record<DisplayPlan, string | null> = {
   free:    null,
   starter: 'starter_monthly',
@@ -28,10 +26,10 @@ const PLAN_FEATURES: Record<DisplayPlan, string[]> = {
 }
 
 const PLAN_ACCENT: Record<DisplayPlan, { border: string; badge: string; btn: string; glow: string }> = {
-  free:    { border: 'border-white/10',        badge: '',                                  btn: 'bg-white/8 text-slate-300',                                                                                                                glow: '' },
-  starter: { border: 'border-blue-500/30',     badge: 'bg-blue-500/10 text-blue-300',      btn: 'bg-blue-600 hover:bg-blue-500 text-white',                                                                                                 glow: '' },
-  pro:     { border: 'border-violet-500/50',   badge: 'bg-violet-500/10 text-violet-300',  btn: 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/20',     glow: 'ring-1 ring-violet-500/30' },
-  silver:  { border: 'border-amber-500/40',    badge: 'bg-amber-500/10 text-amber-300',    btn: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-lg shadow-amber-500/20',          glow: 'ring-1 ring-amber-500/30' },
+  free:    { border: 'border-[var(--border)]',    badge: '',                                   btn: 'bg-black/5 dark:bg-white/8 text-slate-500 dark:text-slate-300',                                                                          glow: '' },
+  starter: { border: 'border-blue-400/40',         badge: 'bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300',  btn: 'bg-blue-600 hover:bg-blue-500 text-white',                                                               glow: '' },
+  pro:     { border: 'border-violet-500/50',       badge: 'bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300', btn: 'bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/20', glow: 'ring-1 ring-violet-500/30' },
+  silver:  { border: 'border-amber-400/50',        badge: 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300',   btn: 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white shadow-lg shadow-amber-500/20',   glow: 'ring-1 ring-amber-500/30' },
 }
 
 export default function UpgradePage() {
@@ -60,8 +58,8 @@ export default function UpgradePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-black text-white">Upgrade Plan</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Pay with M-Pesa or Pesapal. Cancel anytime.</p>
+        <h1 className="text-xl font-black text-slate-900 dark:text-white">Upgrade Plan</h1>
+        <p className="text-[var(--muted)] text-sm mt-0.5">Pay with M-Pesa or Pesapal. Cancel anytime.</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -73,13 +71,13 @@ export default function UpgradePage() {
           const accent      = PLAN_ACCENT[plan]
 
           return (
-            <div
-              key={plan}
+            <div key={plan}
               className={clsx(
-                'relative rounded-2xl border p-5 flex flex-col transition-all bg-white/3',
+                'relative rounded-2xl border p-5 flex flex-col transition-all',
+                'bg-[var(--surface)] dark:bg-white/[0.03]',
                 accent.border,
                 accent.glow,
-                isCurrent && 'opacity-75'
+                isCurrent && 'opacity-70'
               )}
             >
               {plan === 'pro' && (
@@ -99,7 +97,7 @@ export default function UpgradePage() {
 
               <div className="flex items-start justify-between mb-4 mt-1">
                 <div>
-                  <h2 className="text-base font-bold text-white capitalize">{config.name}</h2>
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white capitalize">{config.name}</h2>
                   {accent.badge && (
                     <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1 inline-block', accent.badge)}>
                       {plan.toUpperCase()}
@@ -107,36 +105,34 @@ export default function UpgradePage() {
                   )}
                 </div>
                 <div className="text-right">
-                  {config.price === 0 ? (
-                    <span className="text-xl font-black text-white">Free</span>
-                  ) : (
-                    <span className="text-xl font-black text-white">{formatPrice(config.price)}</span>
-                  )}
+                  <span className="text-xl font-black text-slate-900 dark:text-white">
+                    {config.price === 0 ? 'Free' : formatPrice(config.price)}
+                  </span>
                 </div>
               </div>
 
               <ul className="space-y-2 mb-5 flex-1">
                 {PLAN_FEATURES[plan].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-slate-400">
-                    <Check size={13} className="text-violet-400 flex-shrink-0 mt-0.5" />
+                  <li key={f} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400">
+                    <Check size={13} className="text-violet-500 flex-shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
               </ul>
 
               {isCurrent ? (
-                <div className="w-full py-2.5 rounded-xl bg-white/5 text-center text-sm font-medium text-slate-500">
+                <div className="w-full py-2.5 rounded-xl bg-black/5 dark:bg-white/5 text-center text-sm font-medium text-[var(--muted)]">
                   Current plan
                 </div>
               ) : plan === 'free' ? (
-                <div className="w-full py-2.5 rounded-xl bg-white/5 text-center text-xs text-slate-600">—</div>
+                <div className="w-full py-2.5 rounded-xl bg-black/5 dark:bg-white/5 text-center text-xs text-[var(--muted)]">—</div>
               ) : (
                 <button
                   onClick={() => handleUpgrade(plan)}
                   disabled={!!loading || isDowngrade}
                   className={clsx(
                     'w-full py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed',
-                    isDowngrade ? 'bg-white/5 text-slate-600' : accent.btn
+                    isDowngrade ? 'bg-black/5 dark:bg-white/5 text-[var(--muted)]' : accent.btn
                   )}
                 >
                   {loading === plan && <Loader size={13} className="animate-spin" />}
@@ -148,7 +144,7 @@ export default function UpgradePage() {
         })}
       </div>
 
-      <p className="text-center text-xs text-slate-600">
+      <p className="text-center text-xs text-[var(--muted)]">
         Payments processed by Pesapal · M-Pesa · Secure &amp; encrypted
       </p>
     </div>

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
 import { Toaster } from 'react-hot-toast'
+import { ThemeProvider } from '@/components/ThemeProvider'
 import './globals.css'
 
 const geistSans = localFont({
@@ -93,17 +94,26 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor:       '#7c3aed',
-  colorScheme:      'dark',
-  width:            'device-width',
-  initialScale:     1,
-  maximumScale:     5,
+  themeColor:   [
+    { media: '(prefers-color-scheme: dark)',  color: '#7c3aed' },
+    { media: '(prefers-color-scheme: light)', color: '#7c3aed' },
+  ],
+  colorScheme:  'dark light',
+  width:        'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 }
+
+// Runs before React hydrates — prevents flash of wrong theme
+const themeInitScript = `(function(){try{var t=localStorage.getItem('deelink-theme')||'dark';document.documentElement.classList.add(t);}catch(e){document.documentElement.classList.add('dark');}})()`
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+      <head><script dangerouslySetInnerHTML={{ __html: themeInitScript }} /></head>
       <body className={`${geistSans.variable} font-sans antialiased`}>
+        <ThemeProvider>
         {children}
         <Toaster
           position="bottom-right"
@@ -119,6 +129,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             error:   { iconTheme: { primary: '#f87171', secondary: '#18181b' } },
           }}
         />
+        </ThemeProvider>
       </body>
     </html>
   )

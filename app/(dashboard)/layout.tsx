@@ -16,7 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!token) return null
 
   return (
-    <div className="min-h-screen bg-[#050508] text-white">
+    <div className="min-h-screen" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
       <DashboardNav />
       <main className="max-w-2xl mx-auto px-4 py-8">{children}</main>
     </div>
