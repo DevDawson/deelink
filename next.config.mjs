@@ -6,8 +6,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'http',  hostname: 'localhost',      port: '8000', pathname: '/storage/**' },
-      { protocol: 'https', hostname: 'api.deelink.cc', pathname: '/storage/**' },
-      { protocol: 'https', hostname: 'deelink.vercel.app', pathname: '/storage/**' },
+      { protocol: 'https', hostname: 'api.deelink.cc', pathname: '/storage/**' }, // FIXED: Duplicate removed
     ],
     formats: ['image/avif', 'image/webp'],
   },
